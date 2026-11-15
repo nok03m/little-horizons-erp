@@ -1,0 +1,47 @@
+# Build outputs
+target/
+out/
+build/
+*.class
+*.jar
+!mvnw
+!mvnw.cmd
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local-only project notes (SQL de entrega: bbdd.sql y docs/database.sql)
+Proyecto.md
+
+# Local tooling (Maven portable, probes, smoke tests)
+tools/
+
+# Runtime logs
+error_log.txt
+
+# Generated reports and invoices (keep folder placeholders)
+reports/*.txt
+!reports/.gitkeep
+invoices/*.txt
+invoices/*.pdf
+!invoices/.gitkeep
+
+# Local secrets override (optional)
+application-local.properties
+src/main/resources/application-local.properties
+
+# Maven wrapper temp
+.mvn/wrapper/maven-wrapper.jar.download
