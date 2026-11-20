@@ -3,10 +3,10 @@ package com.littlehorizons.erp.service;
 import com.littlehorizons.erp.dao.UserAccountDao;
 import com.littlehorizons.erp.model.ApplicationRole;
 import com.littlehorizons.erp.model.UserAccount;
+import com.littlehorizons.erp.util.AuthConsole;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
-import java.io.Console;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -30,11 +30,11 @@ public final class AuthService {
         this.userAccountDao = userAccountDao;
     }
 
-    public Optional<UserAccount> login(Console console) {
+    public Optional<UserAccount> login(AuthConsole console) {
         return authenticate(console, null);
     }
 
-    public boolean bootstrapAdministrator(Console console) {
+    public boolean bootstrapAdministrator(AuthConsole console) {
         console.printf("Create the first ERP administrator account.%n");
         String username = readUsername(console);
         char[] password = readConfirmedPassword(console);
@@ -50,7 +50,17 @@ public final class AuthService {
         }
     }
 
-    public boolean createAccountAsAdministrator(Console console) {
+    /** Creates the documented demo administrator; only call from the explicit demo bootstrap command. */
+    public boolean bootstrapDemoAdministrator() {
+        char[] password = "DemoHorizons2026!".toCharArray();
+        try {
+            return userAccountDao.insertFirstAdministrator("demo_admin", hashPassword(password));
+        } finally {
+            Arrays.fill(password, '\0');
+        }
+    }
+
+    public boolean createAccountAsAdministrator(AuthConsole console) {
         if (authenticate(console, ApplicationRole.ADMIN).isEmpty()) {
             return false;
         }
@@ -67,7 +77,7 @@ public final class AuthService {
         }
     }
 
-    public boolean setAccountActiveAsAdministrator(Console console, String username, boolean active) {
+    public boolean setAccountActiveAsAdministrator(AuthConsole console, String username, boolean active) {
         Optional<UserAccount> administrator = authenticate(console, ApplicationRole.ADMIN);
         if (administrator.isEmpty()) return false;
         if (!active && administrator.get().username().equalsIgnoreCase(username)) {
@@ -104,7 +114,7 @@ public final class AuthService {
         }
     }
 
-    private Optional<UserAccount> authenticate(Console console, ApplicationRole requiredRole) {
+    private Optional<UserAccount> authenticate(AuthConsole console, ApplicationRole requiredRole) {
         for (int attempt = 1; attempt <= MAX_LOGIN_ATTEMPTS; attempt++) {
             String username = console.readLine("Username: ").trim();
             char[] password = console.readPassword("Password: ");
@@ -130,7 +140,7 @@ public final class AuthService {
         return Optional.empty();
     }
 
-    private String readUsername(Console console) {
+    private String readUsername(AuthConsole console) {
         while (true) {
             String username = console.readLine("New username (3-50 letters, numbers, dot, dash or underscore): ").trim();
             if (USERNAME_PATTERN.matcher(username).matches()) {
@@ -140,7 +150,7 @@ public final class AuthService {
         }
     }
 
-    private ApplicationRole readRole(Console console) {
+    private ApplicationRole readRole(AuthConsole console) {
         ApplicationRole[] roles = ApplicationRole.values();
         console.printf("Select role:%n");
         for (int index = 0; index < roles.length; index++) {
@@ -160,7 +170,7 @@ public final class AuthService {
         }
     }
 
-    private char[] readConfirmedPassword(Console console) {
+    private char[] readConfirmedPassword(AuthConsole console) {
         while (true) {
             char[] password = console.readPassword("New password (at least 12 characters): ");
             char[] confirmation = console.readPassword("Confirm password: ");

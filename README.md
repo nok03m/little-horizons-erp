@@ -136,11 +136,26 @@ mvn clean package
 
 ### 7.4. Ejecutar
 
-La primera vez, crea la cuenta administradora desde una terminal interactiva segura:
+La primera vez, crea la cuenta administradora con el bootstrap interactivo. Desde IntelliJ, la contraseña se solicita en un diálogo enmascarado:
 
 ```bash
 java -jar target/little-horizons-erp-1.0.0.jar --bootstrap-admin
 ```
+
+#### Credenciales de demostración
+
+Para una demo local, crea la cuenta predeterminada solo cuando no existan cuentas:
+
+```bash
+java -jar target/little-horizons-erp-1.0.0.jar --bootstrap-demo-admin
+```
+
+Credenciales demo:
+
+- Usuario: `demo_admin`
+- Contraseña: `DemoHorizons2026!`
+
+Estas credenciales son públicas y solo para demostraciones locales. No las uses en producción ni en una base con datos reales. El bootstrap demo se rechaza si ya existe cualquier cuenta.
 
 Luego, inicia la aplicación normalmente; solicitará usuario y contraseña:
 
@@ -156,7 +171,7 @@ java -jar target/little-horizons-erp-1.0.0.jar --create-user
 
 El administrador autenticado puede desactivar/reactivar cuentas con `--disable-user <usuario>` y `--enable-user <usuario>`. No se permite desactivar la cuenta propia ni el último administrador activo. Cinco contraseñas incorrectas bloquean la cuenta durante 15 minutos; un inicio válido reinicia el contador.
 
-Las contraseñas se ocultan al escribirlas y se almacenan con PBKDF2-HMAC-SHA256, salt aleatorio y 310 000 iteraciones. Se requiere un terminal real con entrada de contraseña oculta; la aplicación se cierra si no puede obtenerlo.
+Las contraseñas se ocultan al escribirlas y se almacenan con PBKDF2-HMAC-SHA256, salt aleatorio y 310 000 iteraciones. Se usa entrada de terminal cuando está disponible y un diálogo enmascarado al ejecutar desde IntelliJ.
 
 ## Estructura del Proyecto
 

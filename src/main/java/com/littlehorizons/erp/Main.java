@@ -42,6 +42,7 @@ import com.littlehorizons.erp.service.InvoicePdfService;
 import com.littlehorizons.erp.service.InvoiceTxtService;
 import com.littlehorizons.erp.service.ReportTxtService;
 import com.littlehorizons.erp.util.AppLogger;
+import com.littlehorizons.erp.util.AuthConsole;
 import com.littlehorizons.erp.util.ConsoleHelper;
 import com.littlehorizons.erp.util.DatabaseConnection;
 import com.littlehorizons.erp.view.AcademicManagementView;
@@ -80,11 +81,7 @@ public final class Main {
         System.out.println("Database connection OK: " + databaseConnection.getJdbcUrl());
         AppLogger.info("Application started successfully.");
 
-        java.io.Console terminal = System.console();
-        if (terminal == null) {
-            System.err.println("A secure terminal is required for password entry. Run the application from a terminal.");
-            return;
-        }
+        AuthConsole terminal = new AuthConsole(System.console());
 
         UserAccountDao userAccountDao = new UserAccountDao();
         AuthService authService = new AuthService(userAccountDao);
@@ -101,7 +98,7 @@ public final class Main {
             boolean accountStatusCommand = args.length == 2
                     && ("--disable-user".equals(args[0]) || "--enable-user".equals(args[0]));
             if (args.length != 1 && !accountStatusCommand) {
-                System.err.println("Use --bootstrap-admin, --create-user, --disable-user <name> or --enable-user <name>.");
+                System.err.println("Use --bootstrap-admin, --bootstrap-demo-admin, --create-user, --disable-user <name> or --enable-user <name>.");
                 return;
             }
             if (accountStatusCommand) {
@@ -127,6 +124,18 @@ public final class Main {
                     }
                     authService.bootstrapAdministrator(terminal);
                 }
+                case "--bootstrap-demo-admin" -> {
+                    if (accountCount != 0) {
+                        System.err.println("Accounts already exist. Demo bootstrap is disabled.");
+                        return;
+                    }
+                    if (authService.bootstrapDemoAdministrator()) {
+                        System.out.println("Demo administrator created. Username: demo_admin");
+                        System.out.println("Use the demo password documented in README.md.");
+                    } else {
+                        System.err.println("Demo administrator was not created; an account may have been added concurrently.");
+                    }
+                }
                 case "--create-user" -> {
                     if (accountCount == 0) {
                         System.err.println("Create the first administrator with --bootstrap-admin first.");
@@ -134,13 +143,13 @@ public final class Main {
                     }
                     authService.createAccountAsAdministrator(terminal);
                 }
-                default -> System.err.println("Unknown command. Use --bootstrap-admin, --create-user, --disable-user or --enable-user.");
+                default -> System.err.println("Unknown command. Use --bootstrap-admin, --bootstrap-demo-admin, --create-user, --disable-user or --enable-user.");
             }
             return;
         }
 
         if (accountCount == 0) {
-            System.err.println("No ERP accounts exist. Create the first administrator with --bootstrap-admin.");
+            System.err.println("No ERP accounts exist. Use --bootstrap-admin or --bootstrap-demo-admin for a local demo.");
             return;
         }
 
