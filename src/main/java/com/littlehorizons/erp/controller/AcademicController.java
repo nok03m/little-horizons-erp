@@ -6,11 +6,13 @@ import com.littlehorizons.erp.dao.GradeDao;
 import com.littlehorizons.erp.dao.SubjectDao;
 import com.littlehorizons.erp.dao.SubjectEnrollmentDao;
 import com.littlehorizons.erp.model.AcademicRecord;
+import com.littlehorizons.erp.model.AcademicPerformanceReport;
 import com.littlehorizons.erp.model.AttendanceRecord;
 import com.littlehorizons.erp.model.Grade;
 import com.littlehorizons.erp.model.Subject;
 import com.littlehorizons.erp.model.SubjectEnrollment;
 import com.littlehorizons.erp.service.AcademicService;
+import com.littlehorizons.erp.service.AcademicPerformanceService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -26,6 +28,7 @@ public class AcademicController {
     private final AttendanceDao attendanceDao;
     private final GradeDao gradeDao;
     private final AcademicService academicService;
+    private final AcademicPerformanceService academicPerformanceService = new AcademicPerformanceService();
 
     public AcademicController(SubjectDao subjectDao,
                               SubjectEnrollmentDao subjectEnrollmentDao,
@@ -95,6 +98,10 @@ public class AcademicController {
 
     public List<AcademicRecord> listAcademicRecords() {
         return academicRecordDao.findAll();
+    }
+
+    public AcademicPerformanceReport academicPerformanceReport() {
+        return academicPerformanceService.generateReport(academicRecordDao.findRecordsForPerformanceReport());
     }
 
     public List<AcademicRecord> listAcademicRecordsByStudent(int studentId) {

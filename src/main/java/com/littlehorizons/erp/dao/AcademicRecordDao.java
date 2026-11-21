@@ -1,6 +1,7 @@
 package com.littlehorizons.erp.dao;
 
 import com.littlehorizons.erp.model.AcademicRecord;
+import com.littlehorizons.erp.model.AcademicPerformanceRecord;
 import com.littlehorizons.erp.util.AppLogger;
 import com.littlehorizons.erp.util.DatabaseConnection;
 
@@ -16,6 +17,33 @@ import java.util.List;
 import java.util.Optional;
 
 public class AcademicRecordDao {
+
+    public List<AcademicPerformanceRecord> findRecordsForPerformanceReport() {
+        String sql = """
+                SELECT r.id_registro, r.valor_nota, r.periodo_academico,
+                       m.id_materia, m.codigo_materia, m.nombre_materia
+                FROM registros_academicos r
+                JOIN materias m ON m.id_materia = r.id_materia
+                """;
+        List<AcademicPerformanceRecord> records = new ArrayList<>();
+        try (Connection connection = DatabaseConnection.getInstance().getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                records.add(new AcademicPerformanceRecord(
+                        resultSet.getInt("id_registro"),
+                        resultSet.getBigDecimal("valor_nota"),
+                        resultSet.getString("periodo_academico"),
+                        resultSet.getInt("id_materia"),
+                        resultSet.getString("codigo_materia"),
+                        resultSet.getString("nombre_materia")));
+            }
+        } catch (SQLException exception) {
+            AppLogger.error("Failed to load academic performance records", exception);
+            throw new IllegalStateException("Unable to load academic performance records.", exception);
+        }
+        return records;
+    }
 
     public List<AcademicRecord> findAll() {
         return query(baseSelect() + " ORDER BY r.anio_academico DESC, e.primer_apellido", null, null);
