@@ -4,14 +4,20 @@ import com.littlehorizons.erp.controller.AcademicController;
 import com.littlehorizons.erp.controller.StudentController;
 import com.littlehorizons.erp.controller.TeacherController;
 import com.littlehorizons.erp.model.AcademicRecord;
+import com.littlehorizons.erp.model.AcademicPerformanceReport;
+import com.littlehorizons.erp.model.SubjectPerformance;
 import com.littlehorizons.erp.model.AttendanceRecord;
 import com.littlehorizons.erp.model.Grade;
 import com.littlehorizons.erp.model.Subject;
 import com.littlehorizons.erp.model.SubjectEnrollment;
 import com.littlehorizons.erp.util.AppLogger;
 import com.littlehorizons.erp.util.ConsoleHelper;
+import com.littlehorizons.erp.service.ReportTxtService;
 
 import java.math.BigDecimal;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -30,15 +36,18 @@ public class AcademicManagementView {
     private final AcademicController academicController;
     private final StudentController studentController;
     private final TeacherController teacherController;
+    private final ReportTxtService reportTxtService;
 
     public AcademicManagementView(ConsoleHelper console,
                                   AcademicController academicController,
                                   StudentController studentController,
-                                  TeacherController teacherController) {
+                                  TeacherController teacherController,
+                                  ReportTxtService reportTxtService) {
         this.console = console;
         this.academicController = academicController;
         this.studentController = studentController;
         this.teacherController = teacherController;
+        this.reportTxtService = reportTxtService;
     }
 
     public void show() {
@@ -52,8 +61,9 @@ public class AcademicManagementView {
             System.out.println("4. Averages");
             System.out.println("5. Attendance");
             System.out.println("6. Absence report");
-            System.out.println("7. Back to main menu");
-            int option = console.readIntInRange("Select an option: ", 1, 7);
+            System.out.println("7. Reporte de rendimiento académico por materia");
+            System.out.println("8. Back to main menu");
+            int option = console.readIntInRange("Select an option: ", 1, 8);
             switch (option) {
                 case 1 -> showSubjects();
                 case 2 -> showSubjectEnrollments();
@@ -61,7 +71,8 @@ public class AcademicManagementView {
                 case 4 -> showAverages();
                 case 5 -> showAttendance();
                 case 6 -> showAbsenceReport();
-                case 7 -> running = false;
+                case 7 -> showAcademicPerformanceReport();
+                case 8 -> running = false;
                 default -> console.printError("Unexpected option.");
             }
         }
@@ -388,6 +399,68 @@ public class AcademicManagementView {
             AppLogger.error("Averages failed", exception);
         }
         console.pause();
+    }
+
+    private void showAcademicPerformanceReport() {
+        try {
+            AcademicPerformanceReport report = academicController.academicPerformanceReport();
+            String content = formatAcademicPerformanceReport(report);
+            System.out.print(content);
+            try {
+                Path backup = reportTxtService.writeReportText("academic_performance", content);
+                console.printSuccess("Respaldo TXT guardado en " + backup);
+            } catch (RuntimeException exception) {
+                console.printError("El reporte se muestra arriba, pero no se pudo guardar el respaldo TXT.");
+                AppLogger.error("Academic performance report backup failed", exception);
+            }
+        } catch (RuntimeException exception) {
+            console.printError(exception.getMessage());
+            AppLogger.error("Academic performance report failed", exception);
+        }
+        console.pause();
+    }
+
+    private String formatAcademicPerformanceReport(AcademicPerformanceReport report) {
+        String newline = System.lineSeparator();
+        StringBuilder output = new StringBuilder();
+        String title = " REPORTE DE RENDIMIENTO ACADÉMICO POR MATERIA ";
+        String border = "+" + "-".repeat(title.length()) + "+";
+        output.append(border).append(newline)
+                .append("|").append(title).append("|").append(newline)
+                .append(border).append(newline)
+                .append("Generado: ")
+                .append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .append(newline).append(newline);
+
+        if (report.isEmpty()) {
+            output.append("No hay registros académicos suficientes para generar estadísticas.").append(newline)
+                    .append("Asegúrese de que existan notas registradas en el sistema.").append(newline);
+            return output.toString();
+        }
+
+        output.append("PROMEDIO GENERAL POR MATERIA (ordenado de mayor a menor)").append(newline)
+                .append(String.format("%-14s | %-42s | %s%n", "Código", "Materia", "Promedio"))
+                .append("-".repeat(74)).append(newline);
+        report.subjects().forEach(subject -> output.append(String.format("%-14s | %-42s | %7s%n",
+                subject.subjectCode(), subject.subjectName(), subject.displayAverage().toPlainString())));
+
+        output.append(newline).append("MATERIA(S) CON MEJOR RENDIMIENTO").append(newline)
+                .append("-".repeat(74)).append(newline);
+        if (report.bestPerformers().size() == 1) {
+            SubjectPerformance best = report.bestPerformers().get(0);
+            output.append("Materia destacada: ").append(best.subjectName()).append(" (")
+                    .append(best.subjectCode()).append(")").append(newline)
+                    .append("Promedio general: ").append(best.displayAverage().toPlainString()).append(newline)
+                    .append("Esta materia presenta el mejor rendimiento académico del colegio.").append(newline);
+        } else {
+            output.append("Materias destacadas (empate):").append(newline);
+            report.bestPerformers().forEach(subject -> output.append("- ").append(subject.subjectName())
+                    .append(" (").append(subject.subjectCode()).append(") | Promedio: ")
+                    .append(subject.displayAverage().toPlainString()).append(newline));
+            output.append("Estas materias comparten el mejor rendimiento académico del colegio.").append(newline);
+        }
+        output.append(border).append(newline);
+        return output.toString();
     }
 
     private void showAttendance() {

@@ -218,7 +218,7 @@ public final class Main {
             StudentManagementView studentManagementView = new StudentManagementView(
                     console, studentController, guardianController, enrollmentController);
             AcademicManagementView academicManagementView = new AcademicManagementView(
-                    console, academicController, studentController, teacherController);
+                    console, academicController, studentController, teacherController, reportTxtService);
             TeacherManagementView teacherManagementView = new TeacherManagementView(
                     console, teacherController, academicController);
             ExtracurricularManagementView extracurricularManagementView = new ExtracurricularManagementView(
